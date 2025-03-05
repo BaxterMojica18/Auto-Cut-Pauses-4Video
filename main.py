@@ -1,11 +1,13 @@
-import tkinter as tk
+import customtkinter as ctk
 from tkinter import filedialog
 from moviepy import VideoFileClip, concatenate_videoclips
 from pydub import AudioSegment, silence
 import os
+import platform
 
-def process_video(video_path):
-    output_path = "output_video.mp4"
+
+def process_video(video_path, save_folder):
+    output_path = os.path.join(save_folder, "output_video.mp4")
     
     # Load video and extract audio
     video = VideoFileClip(video_path)
@@ -53,15 +55,56 @@ def process_video(video_path):
     # Cleanup
     os.remove(audio_path)
     print("Processing complete. Output saved as", output_path)
+    
+    btn_process.configure(fg_color="green")  # Change button color to green when done
+    
+    # Open output folder
+    if platform.system() == "Windows":
+        os.startfile(save_folder)
+    elif platform.system() == "Darwin":  # macOS
+        os.system(f"open {save_folder}")
+    else:  # Linux
+        os.system(f"xdg-open {save_folder}")
+
 
 def upload_file():
-    file_path = filedialog.askopenfilename(filetypes=[("Video files", "*.mp4;*.avi;*.mov")])
-    if file_path:
-        process_video(file_path)
+    global video_path
+    video_path = filedialog.askopenfilename(filetypes=[("Video files", "*.mp4;*.avi;*.mov")])
+    if video_path:
+        btn_upload.configure(fg_color="green")  # Change button color to green
+
+
+def save_to():
+    global save_folder
+    save_folder = filedialog.askdirectory()
+    if save_folder:
+        btn_save_to.configure(fg_color="green")  # Change button color to green
+
+
+def start_processing():
+    if video_path and save_folder:
+        btn_process.configure(fg_color="blue")  # Reset button to blue before processing
+        process_video(video_path, save_folder)
+
 
 # GUI Setup
-root = tk.Tk()
+ctk.set_appearance_mode("System")
+ctk.set_default_color_theme("blue")
+
+root = ctk.CTk()
 root.title("Video Silence Cutter")
-btn_upload = tk.Button(root, text="Upload Video", command=upload_file)
-btn_upload.pack(pady=20)
+root.geometry("400x200")
+
+video_path = ""
+save_folder = ""
+
+btn_upload = ctk.CTkButton(root, text="Upload Video", command=upload_file)
+btn_upload.pack(pady=10)
+
+btn_save_to = ctk.CTkButton(root, text="Save To", command=save_to)
+btn_save_to.pack(pady=10)
+
+btn_process = ctk.CTkButton(root, text="Start Processing", command=start_processing)
+btn_process.pack(pady=20)
+
 root.mainloop()
