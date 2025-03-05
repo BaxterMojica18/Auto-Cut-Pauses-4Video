@@ -51,11 +51,18 @@ def process_video(video_path, save_folder):
     speaking_segments = []
     last_end = 0  # Start from the beginning of the video
 
+    buffer_time = 2  # Add 2 seconds between cuts
+
     for start, end in silent_ranges:
-        if last_end < start:  # There's a speaking part before the silence
-            speaking_segments.append((last_end, start))
-            print(f"Speaking segment: {last_end} to {start}")  # Debugging output
-        last_end = end  # Update last_end to the end of the silent segment
+        adjusted_start = max(0, last_end)  
+        adjusted_end = min(start + buffer_time, duration)  # Extend the speaking segment by 2 sec
+
+        if adjusted_start < adjusted_end:  # Ensure valid segment
+            speaking_segments.append((adjusted_start, adjusted_end))
+            print(f"Speaking segment: {adjusted_start} to {adjusted_end}")  # Debugging output
+
+        last_end = end  # Move the reference point to the end of the silence
+
 
     # Capture the final speaking segment (if any)
     if last_end < duration:
