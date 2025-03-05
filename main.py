@@ -70,6 +70,9 @@ def process_video():
         update_terminal("Error: Please select a video and save location first.")
         return
 
+    # Change the button color to indicate processing started
+    btn_process.configure(fg_color="blue")
+
     output_path = os.path.join(save_folder, "output_video.mp4")
     temp_audio = os.path.join(save_folder, "temp_audio.wav")
     silence_log = os.path.join(save_folder, "silence_log.txt")
@@ -109,11 +112,11 @@ def process_video():
     speaking_segments = []
     last_end = 0
     duration = get_video_duration(video_path)
-    
-    buffer_time = 1.5  # Add buffer between cuts
+
+    buffer_time = 1.5
     for start, end in silent_ranges:
-        adjusted_start = max(0, last_end)  
-        adjusted_end = min(start + buffer_time, duration)  # Extend the speaking segment
+        adjusted_start = max(0, last_end)
+        adjusted_end = min(start + buffer_time, duration)
 
         if adjusted_start < adjusted_end:
             speaking_segments.append((adjusted_start, adjusted_end))
@@ -125,7 +128,7 @@ def process_video():
 
     # Create video segments with progress tracking
     with open(segment_list, "w") as f:
-        processed_frames = 0  # Track processed frames
+        processed_frames = 0
         for i, (start, end) in enumerate(speaking_segments):
             segment_file = os.path.join(save_folder, f"segment_{i}.mp4")
             update_terminal(f"Creating segment {i + 1}/{len(speaking_segments)}...")
@@ -135,7 +138,6 @@ def process_video():
                             "-c:a", "aac", "-b:a", "128k", segment_file, "-y"],
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-            # Update progress bar based on processed frames
             segment_frames = (end - start) * fps
             processed_frames += segment_frames
             if total_frames:
@@ -151,7 +153,7 @@ def process_video():
                                stderr=subprocess.PIPE, text=True)
 
     for line in process.stderr:
-        update_terminal(line.strip())  # Show logs
+        update_terminal(line.strip())
         if "frame=" in line:
             parts = line.strip().split()
             for part in parts:
@@ -164,10 +166,14 @@ def process_video():
                         pass  
 
     process.wait()
-    
+
     # Ensure progress bar reaches 100%
     progress_bar.set(1.0)
+    
+    # Update UI to indicate completion
     update_terminal(f"Processing complete. Output saved as {output_path}")
+    btn_process.configure(fg_color="green")  # Turn button green
+    os.startfile(save_folder)  # Open the output folder
 
     # Cleanup
     os.remove(temp_audio)
@@ -177,13 +183,12 @@ def process_video():
         os.remove(os.path.join(save_folder, f"segment_{i}.mp4"))
 
 
+
 def start_processing():
     if video_path and save_folder:
         btn_process.configure(fg_color="blue")
         progress_bar.set(0.0)
         threading.Thread(target=process_video).start()
-
-import customtkinter as ctk
 
 # GUI Setup
 ctk.set_appearance_mode("System")
@@ -198,13 +203,13 @@ frame = ctk.CTkFrame(root)
 frame.pack(pady=10, padx=10, fill="both", expand=True)
 
 # Upload Video Button and Label
-btn_upload = ctk.CTkButton(frame, text="Upload Video", command=lambda: print("Upload Video"))
+btn_upload = ctk.CTkButton(frame, text="Upload Video", command=upload_file)
 btn_upload.grid(row=0, column=0, padx=10, pady=10, sticky="w")
 lbl_video_path = ctk.CTkLabel(frame, text="No file selected", anchor="w", width=150)
 lbl_video_path.grid(row=0, column=1, padx=10, pady=10, sticky="w")
 
 # Save To Button and Label
-btn_save_to = ctk.CTkButton(frame, text="Save To", command=lambda: print("Save To"))
+btn_save_to = ctk.CTkButton(frame, text="Save To", command=save_to)
 btn_save_to.grid(row=1, column=0, padx=10, pady=10, sticky="w")
 lbl_save_path = ctk.CTkLabel(frame, text="No folder selected", anchor="w", width=150)
 lbl_save_path.grid(row=1, column=1, padx=10, pady=10, sticky="w")
@@ -217,7 +222,7 @@ progress_bar = ctk.CTkProgressBar(frame, width=400)
 progress_bar.grid(row=2, column=2, padx=10, pady=10, sticky="ew")
 
 # Start Processing Button (centered in the last row)
-btn_process = ctk.CTkButton(frame, text="Start Processing", command=lambda: print("Start Processing"))
+btn_process = ctk.CTkButton(frame, text="Start Processing", command=start_processing)
 btn_process.grid(row=3, column=0, columnspan=3, pady=10, sticky="")
 
 # Configure grid weights to make the layout responsive
