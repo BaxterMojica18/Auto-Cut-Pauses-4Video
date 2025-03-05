@@ -77,9 +77,9 @@ def process_video():
 
     update_terminal("Starting processing...")
 
-    # Get FPS and Bitrate
-    fps, bitrate = get_video_properties(video_path)
-    update_terminal(f"Video FPS: {fps}, Bitrate: {bitrate}")
+    # Get FPS, Bitrate, and Total Frames
+    fps, bitrate, total_frames = get_video_properties(video_path)
+    update_terminal(f"Video FPS: {fps}, Bitrate: {bitrate}, Total Frames: {total_frames}")
 
     # Extract audio
     update_terminal("Extracting audio...")
@@ -110,42 +110,64 @@ def process_video():
     last_end = 0
     duration = get_video_duration(video_path)
     
-    buffer_time = 1.5  # Add 2 seconds between cuts
-
+    buffer_time = 1.5  # Add buffer between cuts
     for start, end in silent_ranges:
         adjusted_start = max(0, last_end)  
-        adjusted_end = min(start + buffer_time, duration)  # Extend the speaking segment by 2 sec
+        adjusted_end = min(start + buffer_time, duration)  # Extend the speaking segment
 
-        if adjusted_start < adjusted_end:  # Ensure valid segment
+        if adjusted_start < adjusted_end:
             speaking_segments.append((adjusted_start, adjusted_end))
-            print(f"Speaking segment: {adjusted_start} to {adjusted_end}")  # Debugging output
 
-        last_end = end  # Move the reference point to the end of the silence
-    
+        last_end = end
+
     if last_end < duration:
         speaking_segments.append((last_end, duration))
 
-    # Create video segments
+    # Create video segments with progress tracking
     with open(segment_list, "w") as f:
+        processed_frames = 0  # Track processed frames
         for i, (start, end) in enumerate(speaking_segments):
             segment_file = os.path.join(save_folder, f"segment_{i}.mp4")
-            update_terminal(f"Creating segment: {segment_file} from {start}s to {end}s")
+            update_terminal(f"Creating segment {i + 1}/{len(speaking_segments)}...")
+
             subprocess.run(["ffmpeg", "-i", video_path, "-ss", str(start), "-to", str(end),
                             "-c:v", "libx264", "-preset", "fast", "-crf", "18",
                             "-c:a", "aac", "-b:a", "128k", segment_file, "-y"],
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            f.write(f"file '{segment_file.replace('\\', '/')}'\n") 
 
-    # Merge video
+            # Update progress bar based on processed frames
+            segment_frames = (end - start) * fps
+            processed_frames += segment_frames
+            if total_frames:
+                progress_bar.set(processed_frames / total_frames)
+
+            f.write(f"file '{segment_file.replace('\\', '/')}'\n")
+
+    # Merge video with progress tracking
     update_terminal("Merging segments...")
-    merge_result = subprocess.run(["ffmpeg", "-f", "concat", "-safe", "0", "-i", segment_list,
-                                   "-c:v", "libx264", "-preset", "fast", "-crf", "18",
-                                   "-c:a", "aac", "-b:a", "128k", output_path, "-y"],
-                                  stderr=subprocess.PIPE, text=True)
+    process = subprocess.Popen(["ffmpeg", "-f", "concat", "-safe", "0", "-i", segment_list,
+                                "-c:v", "libx264", "-preset", "fast", "-crf", "18",
+                                "-c:a", "aac", "-b:a", "128k", output_path, "-y"],
+                               stderr=subprocess.PIPE, text=True)
 
-    if "Invalid data found" in merge_result.stderr:
-        update_terminal("Error: FFmpeg failed to merge segments.")
-        return
+    for line in process.stderr:
+        update_terminal(line.strip())  # Show logs
+        if "frame=" in line:
+            parts = line.strip().split()
+            for part in parts:
+                if part.startswith("frame="):
+                    try:
+                        current_frame = int(part.split("=")[1])
+                        if total_frames:
+                            progress_bar.set(current_frame / total_frames)
+                    except ValueError:
+                        pass  
+
+    process.wait()
+    
+    # Ensure progress bar reaches 100%
+    progress_bar.set(1.0)
+    update_terminal(f"Processing complete. Output saved as {output_path}")
 
     # Cleanup
     os.remove(temp_audio)
@@ -154,7 +176,6 @@ def process_video():
     for i in range(len(speaking_segments)):
         os.remove(os.path.join(save_folder, f"segment_{i}.mp4"))
 
-    update_terminal(f"Processing complete. Output saved as {output_path}")
 
 def start_processing():
     if video_path and save_folder:
@@ -162,35 +183,49 @@ def start_processing():
         progress_bar.set(0.0)
         threading.Thread(target=process_video).start()
 
+import customtkinter as ctk
+
 # GUI Setup
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("blue")
 
 root = ctk.CTk()
-root.title("Video Silence Cutter")
-root.geometry("1000x650")
+root.title("Automatic Video Silence Remover")
+root.geometry("900x500")
 
 # UI Components
 frame = ctk.CTkFrame(root)
-frame.pack(pady=20, padx=20, fill="both", expand=True)
+frame.pack(pady=10, padx=10, fill="both", expand=True)
 
-btn_upload = ctk.CTkButton(frame, text="Upload Video", command=upload_file)
-btn_upload.grid(row=0, column=0, padx=10, pady=10)
-lbl_video_path = ctk.CTkLabel(frame, text="No file selected", anchor="w", width=300)
-lbl_video_path.grid(row=0, column=1, padx=10)
+# Upload Video Button and Label
+btn_upload = ctk.CTkButton(frame, text="Upload Video", command=lambda: print("Upload Video"))
+btn_upload.grid(row=0, column=0, padx=10, pady=10, sticky="w")
+lbl_video_path = ctk.CTkLabel(frame, text="No file selected", anchor="w", width=150)
+lbl_video_path.grid(row=0, column=1, padx=10, pady=10, sticky="w")
 
-btn_save_to = ctk.CTkButton(frame, text="Save To", command=save_to)
-btn_save_to.grid(row=1, column=0, padx=10, pady=10)
-lbl_save_path = ctk.CTkLabel(frame, text="No folder selected", anchor="w", width=300)
-lbl_save_path.grid(row=1, column=1, padx=10)
+# Save To Button and Label
+btn_save_to = ctk.CTkButton(frame, text="Save To", command=lambda: print("Save To"))
+btn_save_to.grid(row=1, column=0, padx=10, pady=10, sticky="w")
+lbl_save_path = ctk.CTkLabel(frame, text="No folder selected", anchor="w", width=150)
+lbl_save_path.grid(row=1, column=1, padx=10, pady=10, sticky="w")
 
-btn_process = ctk.CTkButton(frame, text="Start Processing", command=start_processing)
-btn_process.grid(row=2, column=0, columnspan=2, pady=10)
+# Terminal Box and Progress Bar (right beside the label boxes)
+terminal_box = ctk.CTkTextbox(frame, height=150, width=500, state="disabled")  # Reduced height
+terminal_box.grid(row=0, column=2, rowspan=2, padx=10, pady=10, sticky="nsew")
 
-terminal_box = ctk.CTkTextbox(frame, height=200, width=600, state="disabled")
-terminal_box.grid(row=3, column=0, columnspan=2, pady=10)
+progress_bar = ctk.CTkProgressBar(frame, width=400)
+progress_bar.grid(row=2, column=2, padx=10, pady=10, sticky="ew")
 
-progress_bar = ctk.CTkProgressBar(frame, width=600)
-progress_bar.grid(row=4, column=0, columnspan=2)
+# Start Processing Button (centered in the last row)
+btn_process = ctk.CTkButton(frame, text="Start Processing", command=lambda: print("Start Processing"))
+btn_process.grid(row=3, column=0, columnspan=3, pady=10, sticky="")
+
+# Configure grid weights to make the layout responsive
+frame.grid_rowconfigure(0, weight=1)  # Allow the first row to expand
+frame.grid_rowconfigure(1, weight=1)  # Allow the second row to expand
+frame.grid_rowconfigure(2, weight=0)  # Keep the progress bar row fixed
+frame.grid_columnconfigure(0, weight=0)  # Keep the first column fixed
+frame.grid_columnconfigure(1, weight=0)  # Keep the second column fixed
+frame.grid_columnconfigure(2, weight=1)  # Allow the terminal and progress bar column to expand
 
 root.mainloop()
