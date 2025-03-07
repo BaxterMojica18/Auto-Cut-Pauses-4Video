@@ -1,5 +1,6 @@
 import customtkinter as ctk
 from tkinter import filedialog
+import tkinter as tk
 import os
 import threading
 import subprocess
@@ -189,48 +190,93 @@ def start_processing():
         btn_process.configure(fg_color="blue")
         progress_bar.set(0.0)
         threading.Thread(target=process_video).start()
+        
 
-# GUI Setup
-ctk.set_appearance_mode("System")
-ctk.set_default_color_theme("blue")
+import customtkinter as ctk
+
+ctk.set_appearance_mode("Light")
+ctk.set_default_color_theme("green")
 
 root = ctk.CTk()
 root.title("Automatic Video Silence Remover")
-root.geometry("900x500")
+root.geometry("800x500")
 
-# UI Components
-frame = ctk.CTkFrame(root)
-frame.pack(pady=10, padx=10, fill="both", expand=True)
+# Set custom icon
+try:
+    root.iconbitmap("Logo.ico")  # For Windows
+except tk.TclError:
+    print("Icon file not found or unsupported format. Please ensure the file is in .ico format.")
 
-# Upload Video Button and Label
-btn_upload = ctk.CTkButton(frame, text="Upload Video", command=upload_file)
+
+# ============== Sidebar ==============
+sidebar = ctk.CTkFrame(root, width=350, corner_radius=0)
+sidebar.pack(fill="y", side="left")
+
+def show_home():
+    edit_frame.pack_forget()
+    home_frame.pack(fill="both", expand=True)
+
+def show_edit():
+    home_frame.pack_forget()
+    edit_frame.pack(fill="both", expand=True)
+
+btn_home = ctk.CTkButton(sidebar, text="Home", command=show_home, width=100)
+btn_home.pack(pady=10)
+
+btn_edit = ctk.CTkButton(sidebar, text="Edit", command=show_edit, width=100)
+btn_edit.pack(pady=10)
+
+# ============== Content Area ==============
+content_frame = ctk.CTkFrame(root)
+content_frame.pack(fill="both", expand=True)
+
+# ============== Home Tab ==============
+home_frame = ctk.CTkFrame(content_frame)
+home_frame.pack(fill="both", expand=True)
+
+lbl_home_title = ctk.CTkLabel(home_frame, text="Welcome to Automatic Video Silence Remover", font=("Arial", 16, "bold"))
+lbl_home_title.pack(pady=10)
+
+lbl_home_info = ctk.CTkLabel(
+    home_frame,
+    text=(
+        "This program allows you to automatically remove silent parts from videos.\n\n"
+        "How it works:\n"
+        "1. Upload a video file.\n"
+        "2. Choose a save location.\n"
+        "3. Click 'Start Processing' to remove silent parts.\n"
+        "4. View progress in the terminal and progress bar."
+    ),
+    justify="left"
+)
+lbl_home_info.pack(pady=10, padx=10)
+
+# ============== Edit Tab ==============
+edit_frame = ctk.CTkFrame(content_frame)
+
+btn_upload = ctk.CTkButton(edit_frame, text="Upload Video", width=150, height=50, text_color="White")
 btn_upload.grid(row=0, column=0, padx=10, pady=10, sticky="w")
-lbl_video_path = ctk.CTkLabel(frame, text="No file selected", anchor="w", width=150)
+
+lbl_video_path = ctk.CTkLabel(edit_frame, text="No file selected", anchor="w", width=150)
 lbl_video_path.grid(row=0, column=1, padx=10, pady=10, sticky="w")
 
-# Save To Button and Label
-btn_save_to = ctk.CTkButton(frame, text="Save To", command=save_to)
+btn_save_to = ctk.CTkButton(edit_frame, text="Save To", width=150, height=50, text_color="White")
 btn_save_to.grid(row=1, column=0, padx=10, pady=10, sticky="w")
-lbl_save_path = ctk.CTkLabel(frame, text="No folder selected", anchor="w", width=150)
+
+lbl_save_path = ctk.CTkLabel(edit_frame, text="No folder selected", anchor="w", width=150)
 lbl_save_path.grid(row=1, column=1, padx=10, pady=10, sticky="w")
 
-# Terminal Box and Progress Bar (right beside the label boxes)
-terminal_box = ctk.CTkTextbox(frame, height=150, width=500, state="disabled")  # Reduced height
+terminal_box = ctk.CTkTextbox(edit_frame, height=150, width=500, state="disabled")
 terminal_box.grid(row=0, column=2, rowspan=2, padx=10, pady=10, sticky="nsew")
 
-progress_bar = ctk.CTkProgressBar(frame, width=400)
+progress_bar = ctk.CTkProgressBar(edit_frame, width=400)
 progress_bar.grid(row=2, column=2, padx=10, pady=10, sticky="ew")
 
-# Start Processing Button (centered in the last row)
-btn_process = ctk.CTkButton(frame, text="Start Processing", command=start_processing)
+btn_process = ctk.CTkButton(edit_frame, text="Start Processing", width=75, height=50, text_color="White")
 btn_process.grid(row=3, column=0, columnspan=3, pady=10, sticky="")
 
-# Configure grid weights to make the layout responsive
-frame.grid_rowconfigure(0, weight=1)  # Allow the first row to expand
-frame.grid_rowconfigure(1, weight=1)  # Allow the second row to expand
-frame.grid_rowconfigure(2, weight=0)  # Keep the progress bar row fixed
-frame.grid_columnconfigure(0, weight=0)  # Keep the first column fixed
-frame.grid_columnconfigure(1, weight=0)  # Keep the second column fixed
-frame.grid_columnconfigure(2, weight=1)  # Allow the terminal and progress bar column to expand
+edit_frame.grid_rowconfigure(0, weight=1)
+edit_frame.grid_rowconfigure(1, weight=1)
+edit_frame.grid_columnconfigure(2, weight=1)
 
 root.mainloop()
