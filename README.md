@@ -1,0 +1,1 @@
+This program is mainly targeted for video editors to reduce time for editing, but can also be used by students for school, for work by companies, and individuals who wants to edit their own videos. Enjoy!
