@@ -5,6 +5,7 @@ import threading
 import subprocess
 from functions import upload_file, save_to, start_processing
 import functions
+import sys
 
 ## UI ##
 
@@ -27,13 +28,35 @@ ASSETS_PATH = OUTPUT_PATH / Path(r"E:\Documents\GitHub\Auto-Cut-Pauses-4Video\bu
 def relative_to_assets(path: str) -> Path:
     return ASSETS_PATH / Path(path)
 
+# Define the path to the icon file
+def resource_path(relative_path):
+    """ Get the absolute path to the bundled resource. """
+    if hasattr(sys, '_MEIPASS'):
+        # Running as a bundled executable
+        return os.path.join(sys._MEIPASS, relative_path)
+    else:
+        # Running as a script
+        return os.path.join(os.path.abspath("."), relative_path)
+
+# Define path to Logo.ico dynamically
+def get_icon_path():
+    if getattr(sys, 'frozen', False):
+        # Running in a bundled executable
+        return os.path.join(sys._MEIPASS, "Logo.ico")
+    else:
+        # Running in the source folder
+        return os.path.join(os.path.dirname(__file__), "Logo.ico")
 
 window = Tk()
 
 window.geometry("1440x714")
 window.configure(bg = "#FFFFFF")
 window.title("Automatic Silence Trimmer")
-window.iconbitmap('Logo.ico')
+icon_path = resource_path("Logo.ico")
+window.iconbitmap(icon_path)
+
+# Set window icon
+window.wm_iconbitmap(get_icon_path())
 
 
 canvas = Canvas(
