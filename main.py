@@ -32,6 +32,8 @@ window = Tk()
 
 window.geometry("1440x714")
 window.configure(bg = "#FFFFFF")
+window.title("Automatic Silence Trimmer")
+window.iconbitmap('Logo.ico')
 
 
 canvas = Canvas(
@@ -224,6 +226,8 @@ button_5.place(
 
 functions.terminal_box = Text(window, width=57, height=37, bg="#F0F0F0", fg="#1A1A1A")
 functions.terminal_box.place(x=916, y=53)
+functions.terminal_box.config(state=tk.DISABLED)
+
 functions.btn_upload = button_1
 functions.btn_save_to = button_2
 functions.btn_process = button_3
