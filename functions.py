@@ -196,7 +196,6 @@ def process_video_safe(log_file_path):
 
         # Clean up
         os.remove(temp_audio)
-        os.remove(silence_log)
         os.remove(segment_list)
         for i in range(len(speaking_segments)):
             os.remove(os.path.join(save_folder, f"segment_{i}.mp4"))
