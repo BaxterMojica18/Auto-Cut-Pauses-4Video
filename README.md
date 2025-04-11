@@ -2,7 +2,7 @@ This program is mainly targeted for video editors to reduce time for editing, bu
 
 Installation Instructions:
 
-1. Download the Setup zip file from Google Drive
+1. Download the Setup zip file from Google Drive ===> https://drive.google.com/file/d/1-lyuboDZpSF0Q5iBDeOpTydI9cx2btXD/view
 2. Unzip the file and run the setup file
 3. Continue until the setup process is done
   
