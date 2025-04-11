@@ -8,7 +8,7 @@ Installation Instructions:
   
 4. Download FFMPEG from the browser ===> https://ffmpeg.org/download.html
    
-5. You can follow this guide to help you install FFMPEG and add it to your system path so the program would work: ===> https://phoenixnap.com/kb/ffmpeg-windows
+5. You can follow this guide to help you install FFMPEG and add it to your system path so the program would work: ===> [HOW TO INSTALL FFMPEG.pdf](https://github.com/user-attachments/files/19702872/HOW.TO.INSTALL.FFMPEG.pdf)
    
 6. Test that FFMPEG works. Go to CMD or Powershell and type:
 
@@ -19,5 +19,6 @@ If you see results of FFMPEG, then, you are good to go!
 NOTE:
 
 This program is only recommended for those who record video explanation wherein pauses are present and the background noise is not too excessive. Portrait/Landscape still videos work best. 
+
 
 
